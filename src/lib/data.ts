@@ -1,12 +1,12 @@
 export const personalInfo = {
-  name: "Lorem Ipsum",
-  location: "Dolor Sit Amet",
-  email: "lorem@ipsum.com",
-  github: "https://github.com/loremipsum",
-  linkedin: "https://linkedin.com/in/loremipsum",
+  name: "Cyril PHAM LE",
+  location: "Paris",
+  email: "cyril.phamle@gmail.com",
+  github: "https://github.com/Cyphle",
+  linkedin: "https://www.linkedin.com/in/cyrilphamle/",
   profilePicture: "/profile.jpeg",
   heroDescription:
-    "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+    "Développeur passionné, j’aime sortir du cadre du développement logiciel en cultivant un mindset transversal. J’aime m’impliquer et comprendre tous les aspects d’un projet, allant des enjeux d’infrastructure à ceux de produit, en passant par la sécurité, l’industrialisation, les coûts, l’architecture et la gestion d’équipe. Egalement software crafter et pragmatique, les techniques de clean code et d’architecture me permettent de créer des logiciels maintenables et ayant une valeur ajoutée."
 };
 
 export const workExperience = [
