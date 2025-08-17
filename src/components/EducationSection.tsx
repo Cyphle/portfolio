@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 export default function EducationSection() {
   return (
     <section
-      id="education"
+      id="formation"
       className="py-12 bg-gradient-to-b from-muted/10 to-background"
     >
       <div className="container max-w-4xl mx-auto px-6 md:px-4">

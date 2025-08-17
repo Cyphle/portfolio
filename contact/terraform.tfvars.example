@@ -1,0 +1,17 @@
+# terraform.tfvars.example
+# Copiez ce fichier en terraform.tfvars et modifiez les valeurs
+
+# Région AWS
+aws_region = "eu-west-1"
+
+# Environnement (dev, staging, prod)
+environment = "prod"
+
+# Nom du projet
+project_name = "contact-form"
+
+# Email pour recevoir les notifications
+notification_email = "votre-email@exemple.com"
+
+# Domaine autorisé pour CORS (ou "*" pour tous)
+domain_name = "https://votre-site.com"

@@ -1,6 +1,6 @@
 import { workExperience } from "@/lib/data";
 import TimelineItem from "./TimelineItem";
-import { Briefcase } from "lucide-react";
+import { Briefcase, LucidePcCase, PenTool } from 'lucide-react';
 import { motion } from "framer-motion";
 import MotionWrapper from "./MotionWrapper";
 
@@ -42,11 +42,12 @@ export default function ExperienceSection() {
                 transition={{ duration: 0.5, delay: 0.2 }}
                 viewport={{ once: true }}
               >
+
                 <div className="flex items-center mb-3">
                   <div className="h-6 w-6 flex items-center justify-center rounded-full bg-orange-500/10 mr-2">
-                    <Briefcase className="h-4 w-4 text-orange-500" />
+                    <Briefcase className="h-4 w-4 text-orange-500"/>
                   </div>
-                  <h4 className="text-sm font-medium">Key Achievements</h4>
+                  <h4 className="text-sm font-medium">Le job : </h4>
                 </div>
                 <ul className="list-none ml-4 space-y-2 text-sm">
                   {job.achievements.map((achievement, i) => (
@@ -62,6 +63,25 @@ export default function ExperienceSection() {
                     </motion.li>
                   ))}
                 </ul>
+                <br/>
+                <div className="flex items-center mb-3">
+                  <div className="h-6 w-6 flex items-center justify-center rounded-full bg-orange-500/10 mr-2">
+                    <LucidePcCase className="h-4 w-4 text-orange-500" />
+                  </div>
+                  <h4 className="text-sm font-medium">Environnement technique : </h4>
+                  <div className="list-none ml-2 space-y-2 text-sm">
+                        <motion.li
+                            key={`${index}-tools`}
+                            className="text-muted-foreground relative"
+                            initial={{ opacity: 0, x: -10 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.3, delay: 0.1 * index }}
+                            viewport={{ once: true }}
+                        >
+                          {job.tools.join(', ')}
+                        </motion.li>
+                  </div>
+                </div>
               </motion.div>
             </TimelineItem>
           ))}

@@ -1,0 +1,150 @@
+---
+// src/pages/contact.astro
+// Exemple d'intégration du composant React dans une page Astro
+
+// Import du composant React
+import ContactForm from '../components/ContactForm.jsx';
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Contactez-nous">
+    <main class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4">
+        <div class="max-w-4xl mx-auto">
+            <!-- Header de la page -->
+            <div class="text-center mb-12">
+                <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                    Contactez-nous
+                </h1>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+                    Nous sommes là pour vous aider ! Envoyez-nous un message et nous vous
+                    répondrons dans les plus brefs délais.
+                </p>
+            </div>
+
+            <!-- Composant React avec hydratation -->
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <ContactForm
+                        client:load
+                        apiUrl={import.meta.env.PUBLIC_API_GATEWAY_URL}
+                        className="p-8 md:p-12"
+                />
+            </div>
+
+            <!-- Informations de contact supplémentaires -->
+            <div class="mt-16 grid md:grid-cols-3 gap-8">
+                <div class="text-center">
+                    <div class="bg-white rounded-xl p-6 shadow-lg">
+                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Email</h3>
+                        <p class="text-gray-600">contact@exemple.com</p>
+                    </div>
+                </div>
+
+                <div class="text-center">
+                    <div class="bg-white rounded-xl p-6 shadow-lg">
+                        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Téléphone</h3>
+                        <p class="text-gray-600">+33 1 23 45 67 89</p>
+                    </div>
+                </div>
+
+                <div class="text-center">
+                    <div class="bg-white rounded-xl p-6 shadow-lg">
+                        <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Adresse</h3>
+                        <p class="text-gray-600">
+                            123 Rue Exemple<br>
+                            75001 Paris, France
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FAQ Section -->
+            <div class="mt-16">
+                <h2 class="text-3xl font-bold text-center text-gray-900 mb-8">
+                    Questions fréquentes
+                </h2>
+
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div class="divide-y divide-gray-200">
+                        <details class="group">
+                            <summary class="flex justify-between items-center p-6 cursor-pointer hover:bg-gray-50">
+                                <h3 class="text-lg font-medium text-gray-900">
+                                    Combien de temps pour recevoir une réponse ?
+                                </h3>
+                                <svg class="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </summary>
+                            <div class="px-6 pb-6">
+                                <p class="text-gray-600">
+                                    Nous nous engageons à répondre à tous les messages dans les 24 heures ouvrées.
+                                    Pour les demandes urgentes, n'hésitez pas à nous appeler directement.
+                                </p>
+                            </div>
+                        </details>
+
+                        <details class="group">
+                            <summary class="flex justify-between items-center p-6 cursor-pointer hover:bg-gray-50">
+                                <h3 class="text-lg font-medium text-gray-900">
+                                    Mes données sont-elles sécurisées ?
+                                </h3>
+                                <svg class="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </summary>
+                            <div class="px-6 pb-6">
+                                <p class="text-gray-600">
+                                    Absolument ! Toutes vos données sont chiffrées et stockées de manière sécurisée sur AWS.
+                                    Nous respectons le RGPD et ne partageons jamais vos informations avec des tiers.
+                                </p>
+                            </div>
+                        </details>
+
+                        <details class="group">
+                            <summary class="flex justify-between items-center p-6 cursor-pointer hover:bg-gray-50">
+                                <h3 class="text-lg font-medium text-gray-900">
+                                    Je n'arrive pas à envoyer mon message
+                                </h3>
+                                <svg class="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </summary>
+                            <div class="px-6 pb-6">
+                                <p class="text-gray-600">
+                                    Vérifiez que tous les champs sont correctement remplis et que votre connexion internet fonctionne.
+                                    Si le problème persiste, envoyez-nous un email directement à contact@exemple.com.
+                                </p>
+                            </div>
+                        </details>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</Layout>
+
+<style>
+    /* Styles personnalisés pour améliorer l'apparence */
+    details[open] summary {
+        @apply border-b border-gray-200;
+    }
+
+    details summary::-webkit-details-marker {
+        display: none;
+    }
+</style>

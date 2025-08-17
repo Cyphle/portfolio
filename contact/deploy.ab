@@ -1,0 +1,384 @@
+#!/usr/bin/env amber
+
+// Script de déploiement pour l'infrastructure de formulaire de contact
+// Usage: amber deploy.ab [plan|apply|destroy|test|outputs|validate|cleanup|help]
+
+import "std/fs"
+import "std/text"
+
+// Configuration et couleurs
+let RED = "\x1b[31m"
+let GREEN = "\x1b[32m"
+let YELLOW = "\x1b[33m"
+let BLUE = "\x1b[34m"
+let NC = "\x1b[0m"
+
+// Fonctions d'affichage
+fun print_status(message: Text): Null {
+    echo "{BLUE}[INFO]{NC} {message}"
+}
+
+fun print_success(message: Text): Null {
+    echo "{GREEN}[SUCCESS]{NC} {message}"
+}
+
+fun print_warning(message: Text): Null {
+    echo "{YELLOW}[WARNING]{NC} {message}"
+}
+
+fun print_error(message: Text): Null {
+    echo "{RED}[ERROR]{NC} {message}"
+}
+
+// Vérification des prérequis
+fun check_prerequisites(): Bool {
+    print_status("Vérification des prérequis...")
+
+    // Vérifier Terraform
+    let terraform_check = $terraform version$ failed {
+        print_error("Terraform n'est pas installé")
+        return false
+    }
+
+    // Vérifier AWS CLI
+    let aws_check = $aws --version$ failed {
+        print_error("AWS CLI n'est pas installé")
+        return false
+    }
+
+    // Vérifier les credentials AWS
+    let credentials_check = $aws sts get-caller-identity$ failed {
+        print_error("Credentials AWS non configurés")
+        return false
+    }
+
+    // Vérifier le fichier terraform.tfvars
+    if not file_exist("terraform.tfvars") {
+        print_error("Fichier terraform.tfvars manquant")
+        print_warning("Copiez terraform.tfvars.example en terraform.tfvars et modifiez les valeurs")
+        return false
+    }
+
+    print_success("Tous les prérequis sont satisfaits")
+    return true
+}
+
+// Configuration du dossier lambda
+fun setup_lambda_directory(): Bool {
+    print_status("Préparation du dossier lambda...")
+
+    if not file_exist("lambda") {
+        $mkdir -p lambda$ failed {
+            print_error("Impossible de créer le dossier lambda")
+            return false
+        }
+        print_status("Dossier lambda créé")
+    }
+
+    // Vérification des fichiers Lambda
+    if not file_exist("lambda/contact_validator.py") {
+        print_warning("Fichier contact_validator.py manquant dans le dossier lambda")
+        print_warning("Veuillez copier le code de la Lambda de validation")
+    }
+
+    if not file_exist("lambda/email_sender.py") {
+        print_warning("Fichier email_sender.py manquant dans le dossier lambda")
+        print_warning("Veuillez copier le code de la Lambda d'envoi d'email")
+    }
+
+    return true
+}
+
+// Extraction d'une valeur du fichier terraform.tfvars
+fun extract_tfvar(key: Text): Text {
+    let content = unsafe file_read("terraform.tfvars")
+    let lines = split(content, "\n")
+
+    loop line in lines {
+        if contains(line, key) {
+            let parts = split(line, "\"")
+            if len(parts) >= 2 {
+                return parts[1]
+            }
+        }
+    }
+
+    return ""
+}
+
+// Vérification de l'email SES
+fun check_ses_email(): Bool {
+    print_status("Vérification de la configuration SES...")
+
+    let email = extract_tfvar("notification_email")
+    let region = extract_tfvar("aws_region")
+
+    if email == "" {
+        print_error("Email de notification non trouvé dans terraform.tfvars")
+        return false
+    }
+
+    if region == "" {
+        print_error("Région AWS non trouvée dans terraform.tfvars")
+        return false
+    }
+
+    // Vérifier si l'email est vérifié dans SES
+    let ses_check = $aws ses get-identity-verification-attributes --identities "{email}" --region "{region}"$ failed {
+        print_warning("L'email {email} n'est pas configuré dans SES")
+        print_warning("Exécutez: aws ses verify-email-identity --email-address {email} --region {region}")
+        print_warning("Puis vérifiez votre boîte mail et cliquez sur le lien de vérification")
+
+        echo "Voulez-vous que je configure automatiquement l'email dans SES ? (y/N): "
+        let response = input()
+
+        if response == "y" or response == "Y" {
+            $aws ses verify-email-identity --email-address "{email}" --region "{region}"$ failed {
+                print_error("Erreur lors de la configuration SES")
+                return false
+            }
+            print_success("Demande de vérification envoyée à {email}")
+            print_warning("Vérifiez votre boîte mail et cliquez sur le lien avant de continuer")
+        }
+
+        return false
+    }
+
+    print_success("Email SES vérifié")
+    return true
+}
+
+// Initialisation Terraform
+fun terraform_init(): Bool {
+    print_status("Initialisation de Terraform...")
+    $terraform init$ failed {
+        print_error("Erreur lors de l'initialisation Terraform")
+        return false
+    }
+    print_success("Terraform initialisé")
+    return true
+}
+
+// Validation de la configuration
+fun validate_config(): Bool {
+    print_status("Validation de la configuration Terraform...")
+    $terraform validate$ failed {
+        print_error("Configuration Terraform invalide")
+        return false
+    }
+    print_success("Configuration Terraform valide")
+    return true
+}
+
+// Plan Terraform
+fun terraform_plan(): Bool {
+    print_status("Génération du plan Terraform...")
+    $terraform plan -out=tfplan$ failed {
+        print_error("Erreur lors de la génération du plan")
+        return false
+    }
+    print_success("Plan généré (sauvegardé dans tfplan)")
+    return true
+}
+
+// Apply Terraform
+fun terraform_apply(): Bool {
+    print_status("Application du plan Terraform...")
+
+    if file_exist("tfplan") {
+        $terraform apply tfplan$ failed {
+            print_error("Erreur lors de l'application du plan")
+            return false
+        }
+        $rm -f tfplan$
+    } else {
+        print_warning("Aucun plan trouvé, application directe...")
+        $terraform apply$ failed {
+            print_error("Erreur lors de l'application")
+            return false
+        }
+    }
+
+    print_success("Infrastructure déployée")
+
+    // Affichage des outputs importants
+    print_status("Récupération des informations de déploiement...")
+
+    let api_url = $terraform output -raw api_gateway_url 2>/dev/null$ failed {
+        "Non disponible"
+    }
+
+    let bucket_name = $terraform output -raw s3_bucket_name 2>/dev/null$ failed {
+        "Non disponible"
+    }
+
+    echo ""
+    print_success("=== DÉPLOIEMENT TERMINÉ ===")
+    echo "{GREEN}URL de l'API:{NC} {api_url}"
+    echo "{GREEN}Bucket S3:{NC} {bucket_name}"
+    echo ""
+    print_warning("N'oubliez pas de:")
+    echo "1. Vérifier votre email dans SES si ce n'est pas déjà fait"
+    echo "2. Mettre à jour l'URL de l'API dans votre composant React"
+    echo "3. Configurer CORS avec votre domaine exact si nécessaire"
+
+    return true
+}
+
+// Destroy Terraform
+fun terraform_destroy(): Bool {
+    print_warning("ATTENTION: Cette action va détruire toute l'infrastructure")
+    print_warning("Toutes les données dans S3 seront perdues")
+    echo ""
+    echo "Êtes-vous sûr de vouloir continuer ? Tapez 'yes' pour confirmer: "
+    let response = input()
+
+    if response == "yes" {
+        print_status("Destruction de l'infrastructure...")
+        $terraform destroy$ failed {
+            print_error("Erreur lors de la destruction")
+            return false
+        }
+        print_success("Infrastructure détruite")
+        return true
+    } else {
+        print_status("Destruction annulée")
+        return true
+    }
+}
+
+// Affichage des outputs
+fun show_outputs(): Bool {
+    print_status("Informations de l'infrastructure actuelle:")
+    $terraform output$ failed {
+        print_error("Erreur lors de la récupération des outputs")
+        return false
+    }
+    return true
+}
+
+// Test de l'API
+fun test_api(): Bool {
+    print_status("Test de l'API...")
+
+    let api_url = $terraform output -raw api_gateway_url 2>/dev/null$ failed {
+        print_error("URL de l'API non trouvée")
+        return false
+    }
+
+    print_status("Test de l'endpoint: {api_url}")
+
+    // Test avec curl
+    let test_data = "{
+        \"name\": \"Test User\",
+        \"email\": \"test@example.com\",
+        \"message\": \"Ceci est un message de test depuis le script de déploiement Amber\"
+    }"
+
+    let response = $curl -s -w "%{{http_code}}" -X POST "{api_url}" -H "Content-Type: application/json" -d '{test_data}'$ failed {
+        print_error("Erreur lors du test de l'API")
+        return false
+    }
+
+    let http_code = text_slice(response, len(response) - 3, len(response))
+    let body = text_slice(response, 0, len(response) - 3)
+
+    if http_code == "200" {
+        print_success("API opérationnelle (HTTP {http_code})")
+        echo "Réponse: {body}"
+        return true
+    } else {
+        print_error("Erreur API (HTTP {http_code})")
+        echo "Réponse: {body}"
+        return false
+    }
+}
+
+// Nettoyage des fichiers temporaires
+fun cleanup(): Bool {
+    print_status("Nettoyage des fichiers temporaires...")
+    $rm -f tfplan contact_validator.zip email_sender.zip$ failed {
+        print_warning("Certains fichiers n'ont pas pu être supprimés")
+        return false
+    }
+    print_success("Nettoyage terminé")
+    return true
+}
+
+// Menu d'aide
+fun show_help(): Null {
+    echo "Script de déploiement pour l'infrastructure de formulaire de contact (Amber)"
+    echo ""
+    echo "Usage: amber deploy.ab [COMMAND]"
+    echo ""
+    echo "Commands:"
+    echo "  plan      - Affiche le plan de déploiement sans l'appliquer"
+    echo "  apply     - Déploie l'infrastructure complète"
+    echo "  destroy   - Détruit l'infrastructure (ATTENTION: destructif)"
+    echo "  test      - Teste l'API déployée"
+    echo "  outputs   - Affiche les informations de l'infrastructure"
+    echo "  validate  - Valide la configuration Terraform"
+    echo "  cleanup   - Nettoie les fichiers temporaires"
+    echo "  help      - Affiche cette aide"
+    echo ""
+    echo "Exemples:"
+    echo "  amber deploy.ab plan      # Voir ce qui va être créé"
+    echo "  amber deploy.ab apply     # Déployer l'infrastructure"
+    echo "  amber deploy.ab test      # Tester l'API après déploiement"
+    echo "  amber deploy.ab destroy   # Détruire l'infrastructure"
+    echo ""
+    echo "Prérequis:"
+    echo "  - Amber Lang installé (https://amber-lang.com)"
+    echo "  - Terraform >= 1.0"
+    echo "  - AWS CLI >= 2.0"
+    echo "  - Credentials AWS configurés"
+    echo "  - Fichier terraform.tfvars configuré"
+}
+
+// Fonction principale
+fun main(args: [Text]): Null {
+    let command = if len(args) > 0 { args[0] } else { "help" }
+
+    match command {
+        "plan" -> {
+            if check_prerequisites() and setup_lambda_directory() and terraform_init() and validate_config() {
+                terraform_plan()
+            }
+        }
+        "apply" -> {
+            if check_prerequisites() and setup_lambda_directory() and check_ses_email() and terraform_init() and validate_config() and terraform_plan() {
+                terraform_apply()
+            }
+        }
+        "destroy" -> {
+            if check_prerequisites() {
+                if terraform_destroy() {
+                    cleanup()
+                }
+            }
+        }
+        "test" -> {
+            test_api()
+        }
+        "outputs" -> {
+            show_outputs()
+        }
+        "validate" -> {
+            validate_config()
+        }
+        "cleanup" -> {
+            cleanup()
+        }
+        "help" -> {
+            show_help()
+        }
+        _ -> {
+            print_error("Commande inconnue: {command}")
+            echo ""
+            show_help()
+        }
+    }
+}
+
+// Point d'entrée
+main(args)
