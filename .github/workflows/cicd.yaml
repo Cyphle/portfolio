@@ -16,4 +16,4 @@ jobs:
       - name: check conf
         run: |
           echo ${{ env.SCW_BUCKET }}
-          echo ${{ envs.SCW_REGION }}
+          echo ${{ env.SCW_REGION }}
