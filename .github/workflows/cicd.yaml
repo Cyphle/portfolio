@@ -1,0 +1,46 @@
+name: Deploy Astro to Scaleway
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npm run build
+
+      - name: Install s3cmd
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y s3cmd
+
+      - name: Configure s3cmd
+        run: |
+          printf "[default]\n" > ~/.s3cfg
+          printf "access_key = ${SCW_ACCESS_KEY}\n" >> ~/.s3cfg
+          printf "secret_key = ${SCW_SECRET_KEY}\n" >> ~/.s3cfg
+          printf "host_base = s3.${SCW_REGION}.scw.cloud\n" >> ~/.s3cfg
+          printf "host_bucket = %(bucket)s.s3.${SCW_REGION}.scw.cloud\n" >> ~/.s3cfg
+          printf "signature_v2 = False\n" >> ~/.s3cfg
+          printf "use_https = True\n" >> ~/.s3cfg
+        env:
+          SCW_ACCESS_KEY: ${{ secrets.SCW_ACCESS_KEY }}
+          SCW_SECRET_KEY: ${{ secrets.SCW_SECRET_KEY }}
+          SCW_REGION: ${{ env.SCW_REGION }}
+
+      - name: Ensure bucket exists
+        run: |
+          s3cmd mb s3://$SCW_BUCKET || true
+        env:
+          SCW_BUCKET: ${{ env.SCW_BUCKET }}
+
+      - name: Sync dist to bucket
+        run: |
+          s3cmd sync ./dist/ s3://$SCW_BUCKET/ --delete-removed
+        env:
+          SCW_BUCKET: ${{ env.SCW_BUCKET }}
